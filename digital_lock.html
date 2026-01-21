@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Blue Clock Widget</title>
+    <style>
+        :root {
+            /* === 在这里修改配色 === */
+            --primary-color: #2b5876;  /* 深蓝文字 */
+            --bar-bg: #e6efff;         /* 进度条底色 */
+            --bar-fill-start: #4facfe; /* 渐变蓝起始 */
+            --bar-fill-end: #00f2fe;   /* 渐变蓝结束 */
+            --font-family: 'Courier New', Courier, monospace; /* 复古打字机风格，也可换 sans-serif */
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent; /* 透明背景，融入Notion */
+            color: var(--primary-color);
+        }
+
+        /* 时间显示样式 */
+        #clock {
+            font-size: 3.5rem;
+            font-weight: 300;
+            font-family: var(--font-family);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        /* 进度条容器 */
+        .container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 单个进度行 */
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .label {
+            width: 50px;
+            text-align: right;
+            opacity: 0.8;
+        }
+
+        .progress-track {
+            flex-grow: 1;
+            height: 12px;
+            background-color: var(--bar-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--bar-fill-start), var(--bar-fill-end));
+            border-radius: 10px;
+            transition: width 0.5s ease-out;
+        }
+
+        .value {
+            width: 60px;
+            text-align: left;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="clock">00:00:00</div>
+
+    <div class="container">
+        <div class="row">
+            <span class="label">Year</span>
+            <div class="progress-track">
+                <div class="progress-fill" id="year-bar"></div>
+            </div>
+            <span class="value" id="year-text">0/365</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Month</span>
+            <div class="progress-track">
+                <div class="progress-fill" id="month-bar"></div>
+            </div>
+            <span class="value" id="month-text">0/30</span>
+        </div>
+
+        <div class="row">
+            <span class="label">Week</span>
+            <div class="progress-track">
+                <div class="progress-fill" id="week-bar"></div>
+            </div>
+            <span class="value" id="week-text">0/7</span>
+        </div>
+    </div>
+
+    <script>
+        function updateTime() {
+            // 1. 获取当前时间（强制转换为东八区）
+            // 创建一个当前时间的 Date 对象
+            const now = new Date();
+            // 获取东八区的偏移量（毫秒）: 8小时 * 60分 * 60秒 * 1000
+            const offset = 8; 
+            // 这里的计算稍微复杂，为了确保准确，我们用 Intl API 获取东八区的时间字符串
+            const options = { timeZone: 'Asia/Shanghai', hour12: false, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+            const cnDateString = new Intl.DateTimeFormat('en-US', options).format(now);
+            
+            // 将字符串转回 Date 对象以便计算
+            const targetDate = new Date(cnDateString);
+
+            // --- 更新时钟 ---
+            const timeStr = targetDate.toLocaleTimeString('en-GB', { hour12: false });
+            document.getElementById('clock').innerText = timeStr;
+
+            // --- 计算进度 ---
+            
+            // 1. 本周进度 (周一为1，周日为7)
+            let dayOfWeek = targetDate.getDay();
+            if (dayOfWeek === 0) dayOfWeek = 7; // 把周日(0)变成7
+            updateBar('week', dayOfWeek, 7);
+
+            // 2. 本月进度
+            const dayOfMonth = targetDate.getDate();
+            const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+            updateBar('month', dayOfMonth, daysInMonth);
+
+            // 3. 本年进度
+            const startOfYear = new Date(targetDate.getFullYear(), 0, 1);
+            const startOfNextYear = new Date(targetDate.getFullYear() + 1, 0, 1);
+            const dayOfYear = Math.floor((targetDate - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
+            const daysInYear = Math.floor((startOfNextYear - startOfYear) / (1000 * 60 * 60 * 24));
+            updateBar('year', dayOfYear, daysInYear);
+        }
+
+        function updateBar(id, value, total) {
+            const percentage = (value / total) * 100;
+            document.getElementById(`${id}-bar`).style.width = percentage + '%';
+            document.getElementById(`${id}-text`).innerText = `${value}/${total}`;
+        }
+
+        // 启动定时器，每秒更新一次
+        setInterval(updateTime, 1000);
+        updateTime(); // 页面加载立即执行一次
+    </script>
+</body>
+</html>
