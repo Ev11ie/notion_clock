@@ -6,12 +6,21 @@
     <title>Notion Blue Clock Widget</title>
     <style>
         :root {
-            /* === 在这里修改配色 === */
-            --primary-color: #2b5876;  /* 深蓝文字 */
-            --bar-bg: #e6efff;         /* 进度条底色 */
-            --bar-fill-start: #4facfe; /* 渐变蓝起始 */
-            --bar-fill-end: #00f2fe;   /* 渐变蓝结束 */
-            --font-family: 'Courier New', Courier, monospace; /* 复古打字机风格，也可换 sans-serif */
+            /* === 修改配色区域 === */
+            
+            /* 1. 左边（起始）：很浅的冰蓝色 */
+            --bar-fill-start: #a6c1ee; 
+            
+            /* 2. 右边（结束）：深邃的海洋蓝 */
+            --bar-fill-end: #2b5876;   
+            
+            /* 文字颜色：保持深色以确保清晰 */
+            --primary-color: #2b5876;  
+            
+            /* 进度条底槽颜色：极浅的蓝灰色 */
+            --bar-bg: #f0f4f8;         
+            
+            --font-family: 'Courier New', Courier, monospace;
         }
 
         body {
@@ -22,20 +31,20 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: transparent; /* 透明背景，融入Notion */
+            background-color: transparent;
             color: var(--primary-color);
         }
 
-        /* 时间显示样式 */
         #clock {
             font-size: 3.5rem;
             font-weight: 300;
             font-family: var(--font-family);
             margin-bottom: 20px;
             letter-spacing: 2px;
+            /* 给时间也加一点点透明度，让它不那么生硬 */
+            opacity: 0.9; 
         }
 
-        /* 进度条容器 */
         .container {
             width: 100%;
             max-width: 400px;
@@ -44,7 +53,6 @@
             gap: 12px;
         }
 
-        /* 单个进度行 */
         .row {
             display: flex;
             align-items: center;
@@ -71,9 +79,14 @@
         .progress-fill {
             height: 100%;
             width: 0%;
+            /* 渐变方向：默认就是从左(start)到右(end) */
             background: linear-gradient(90deg, var(--bar-fill-start), var(--bar-fill-end));
+            
             border-radius: 10px;
             transition: width 0.5s ease-out;
+            
+            /* === 核心修改：设置 0.8 的透明度 === */
+            opacity: 0.8; 
         }
 
         .value {
@@ -118,35 +131,27 @@
 
     <script>
         function updateTime() {
-            // 1. 获取当前时间（强制转换为东八区）
-            // 创建一个当前时间的 Date 对象
+            // 东八区时间计算逻辑
             const now = new Date();
-            // 获取东八区的偏移量（毫秒）: 8小时 * 60分 * 60秒 * 1000
-            const offset = 8; 
-            // 这里的计算稍微复杂，为了确保准确，我们用 Intl API 获取东八区的时间字符串
             const options = { timeZone: 'Asia/Shanghai', hour12: false, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
             const cnDateString = new Intl.DateTimeFormat('en-US', options).format(now);
-            
-            // 将字符串转回 Date 对象以便计算
             const targetDate = new Date(cnDateString);
 
-            // --- 更新时钟 ---
+            // 更新时钟
             const timeStr = targetDate.toLocaleTimeString('en-GB', { hour12: false });
             document.getElementById('clock').innerText = timeStr;
 
-            // --- 计算进度 ---
-            
-            // 1. 本周进度 (周一为1，周日为7)
+            // 1. Week Progress
             let dayOfWeek = targetDate.getDay();
-            if (dayOfWeek === 0) dayOfWeek = 7; // 把周日(0)变成7
+            if (dayOfWeek === 0) dayOfWeek = 7; 
             updateBar('week', dayOfWeek, 7);
 
-            // 2. 本月进度
+            // 2. Month Progress
             const dayOfMonth = targetDate.getDate();
             const daysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
             updateBar('month', dayOfMonth, daysInMonth);
 
-            // 3. 本年进度
+            // 3. Year Progress
             const startOfYear = new Date(targetDate.getFullYear(), 0, 1);
             const startOfNextYear = new Date(targetDate.getFullYear() + 1, 0, 1);
             const dayOfYear = Math.floor((targetDate - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
@@ -160,9 +165,8 @@
             document.getElementById(`${id}-text`).innerText = `${value}/${total}`;
         }
 
-        // 启动定时器，每秒更新一次
         setInterval(updateTime, 1000);
-        updateTime(); // 页面加载立即执行一次
+        updateTime();
     </script>
 </body>
 </html>
